@@ -27,8 +27,8 @@
     uploadBtn.addEventListener('click', function (e) {
         e.preventDefault()
         const files = document.querySelector('#file').files
-        progressBarsContainer.innerHTML = '' // Clear previous progress bars
-        const uploadId = generateUUID() // Generate a unique ID for the entire upload
+        progressBarsContainer.innerHTML = '' // Nettoyer les progress bars
+        const uploadId = generateUID() // Générer un ID unique pour chaque upload
         for (const file of files) {
             const fileContainer = document.createElement('div')
             const fileName = document.createElement('span')
@@ -54,8 +54,8 @@
                     method: "POST",
                     headers: {
                         'Content-Disposition': `attachment; filename="${file.name}"`,
-                        'Upload-ID': uploadId, // Pass the unique upload ID
-                        'Total-Chunks': totalChunks // Pass the total number of chunks
+                        'Upload-ID': uploadId, // ID unique pour chaque upload
+                        'Total-Chunks': totalChunks // Nombre total de chunks
                     },
                     body: chunk
                 })
@@ -81,13 +81,13 @@
             if (response.status !== 200) {
                 throw new Error('Erreur lors de la finalisation de l\'upload')
             }
-            progressBar.value = 100 // Ensure progress bar is set to 100% upon completion
+            progressBar.value = 100
         } catch (error) {
             errorMessage.textContent = 'Erreur lors de la finalisation de l\'upload : ' + error.message
         }
     }
 
-    function generateUUID() {
+    function generateUID() {
         // Création d'un id unique pour chaque upload avec un timestamp et un nombre aléatoire
         return Date.now() + '-' + Math.random().toString(36).substr(2, 9);
     }
