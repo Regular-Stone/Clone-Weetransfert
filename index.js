@@ -99,12 +99,17 @@ function main() {
         displaySpinner();
         isEmptyFile();
 
-        await fetch(url, {
-            method: 'POST',
-            body: formData,
-        }).then((response) => {
-            console.log(response)
-        });
+
+        // On va faire un try catch pour gérer les erreurs
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                body: formData,
+            });
+        }
+        catch (error) {
+            console.error('Error:', error);
+        }
 
         return;
     });
