@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BLOB upload</title>
+</head>
+
+<body>
+    <form action="#">
+        <input type="file" value="" id="file" name="file"><br>
+        <input type="submit" id="uploadBtn" value="UPLOAD">
+    </form>
+</body>
+<script>
+    const uploadBtn = document.querySelector('#uploadBtn')
+    const url = 'http://test.test/php_intermediaire/blobupload/blobupload.php'
+
+    uploadBtn.addEventListener('click', function (e) {
+        e.preventDefault()
+        const file = document.querySelector('#file').files[0]
+        uploadBlob(file)
+
+    })
+
+
+    async function uploadBlob(file) {
+        //reader = new FileReader() // le file reader va lire à partir d'une position donnée
+        const chunkSize = 100_000;
+        // const filename = file.name;
+        let start = 0
+        let i = 0
+
+        for (let start = 0; start < file.size; start += chunkSize) {
+            console.log("morceau ", i, "uploadé")
+            i++
+            let end = start + chunkSize
+            const chunk = file.slice(start, end);
+            // const fd = new FormData();
+            // fd.set('file', chunk,);
+
+
+            await fetch(url, {
+                method: "POST",
+                body: chunk
+            })
+                .then(response => response.text())
+
+        }
+    }
+
+
+
+
+
+</script>
+
+</html>
