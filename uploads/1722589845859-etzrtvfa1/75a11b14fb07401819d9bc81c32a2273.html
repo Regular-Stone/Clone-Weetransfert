@@ -20,15 +20,15 @@
 </body>
 <script>
     const uploadBtn = document.querySelector('#uploadBtn')
-    const url = 'http://clone-weetransfert.test/blobupload.php'
+    const url = 'http://test.test/blobupload.php'
     const progressBarsContainer = document.querySelector('#progressBars')
     const errorMessage = document.querySelector('#errorMessage')
 
     uploadBtn.addEventListener('click', function (e) {
         e.preventDefault()
         const files = document.querySelector('#file').files
-        progressBarsContainer.innerHTML = '' // Nettoyer les progress bars
-        const uploadId = generateUID() // Générer un ID unique pour chaque upload
+        progressBarsContainer.innerHTML = '' // Clear previous progress bars
+        const uploadId = generateUUID() // Generate a unique ID for the entire upload
         for (const file of files) {
             const fileContainer = document.createElement('div')
             const fileName = document.createElement('span')
@@ -39,12 +39,12 @@
             fileContainer.appendChild(fileName)
             fileContainer.appendChild(progressBar)
             progressBarsContainer.appendChild(fileContainer)
-            uploadBlob(file, progressBar, uploadId, url)
+            uploadBlob(file, progressBar, uploadId)
         }
     })
 
-    async function uploadBlob(file, progressBar, uploadId, url) {
-        const chunkSize = 500_000;
+    async function uploadBlob(file, progressBar, uploadId) {
+        const chunkSize = 100_000;
         const totalChunks = Math.ceil(file.size / chunkSize)
         for (let i = 0, start = 0; start < file.size; start += chunkSize, i++) {
             let end = start + chunkSize
@@ -54,8 +54,8 @@
                     method: "POST",
                     headers: {
                         'Content-Disposition': `attachment; filename="${file.name}"`,
-                        'Upload-ID': uploadId, // ID unique pour chaque upload
-                        'Total-Chunks': totalChunks // Nombre total de chunks
+                        'Upload-ID': uploadId, // Pass the unique upload ID
+                        'Total-Chunks': totalChunks // Pass the total number of chunks
                     },
                     body: chunk
                 })
@@ -68,7 +68,7 @@
                 break
             }
         }
-        // Nous avons fini d'envoyer les chunks, on finalise l'upload
+        // Notify server that upload is complete
         try {
             const response = await fetch(url, {
                 method: "POST",
@@ -81,15 +81,18 @@
             if (response.status !== 200) {
                 throw new Error('Erreur lors de la finalisation de l\'upload')
             }
-            progressBar.value = 100
+            progressBar.value = 100 // Ensure progress bar is set to 100% upon completion
         } catch (error) {
             errorMessage.textContent = 'Erreur lors de la finalisation de l\'upload : ' + error.message
         }
     }
 
-    function generateUID() {
-        // Création d'un id unique pour chaque upload avec un timestamp et un nombre aléatoire
-        return Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+    function generateUUID() {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            const r = Math.random() * 16 | 0,
+                  v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
     }
 </script>
 </html>

@@ -21,5 +21,6 @@
 			<div>
 				<input type="submit" class="btn btn-primary" id="send" name="submit" value="Envoyer" disabled>
 			</div>
+			<div id="progressBars"></div>
 		</form>
 	</div>

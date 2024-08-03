@@ -1,4 +1,3 @@
-// Effet du nom du site
 document.addEventListener('DOMContentLoaded', () => {
     const spans = document.querySelectorAll('.backgroundText span');
 
@@ -29,6 +28,7 @@ function main() {
     const form = document.querySelector('form');
     // Défini l'URL et le formulaire
     const url = `${location.origin}/src/upload.php`;
+    const testUrl = `${location.origin}/blobupload.php`;
 
     /**
      * Evènements
@@ -89,27 +89,27 @@ function main() {
         formData.append('destEmail', destEmail);
         formData.append('expediteurEmail', emailExpediteurDom.value);
 
-        // Ajoute chaque fichier dans la variable files
         for (let i = 0; i < files.length; i++) {
-            let file = files[i]
-            formData.append('files[]', file);
+            let file = files[i];
+            getFileMD5(file).then(md5 => {
+                console.log(`MD5 du fichier ${file.name}: ${md5}`);
+                uploadBlob(file, null, generateUID(), testUrl, md5);
+            }).catch(error => {
+                console.error(`Erreur lors du calcul du MD5 pour le fichier ${file.name}:`, error);
+            });
         }
 
         resetForm();
         displaySpinner();
         isEmptyFile();
 
-
-        // On va faire un try catch pour gérer les erreurs
-        try {
-            const response = await fetch(url, {
-                method: 'POST',
-                body: formData,
-            });
-        }
-        catch (error) {
-            console.error('Error:', error);
-        }
+        // Envoie les données au serveur
+        await fetch(url, {
+            method: 'POST',
+            body: formData,
+        }).then((response) => {
+            console.log(response)
+        });
 
         return;
     });
@@ -144,7 +144,7 @@ function main() {
         }
     }
 
-    // updade list email
+    // update list email
     function eMailListUpdate(event) {
         const stringHtml = `<div class="email-wrap"><div>${event.target.value}</div><div class="email-del">❌</div></div>`;
         eMailListDom.appendChild(range.createContextualFragment(stringHtml));
@@ -188,4 +188,79 @@ function main() {
             spinner.hidden = true;
         }, 5000);
     }
+}
+
+async function getFileMD5(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const fileContent = event.target.result;
+            const wordArray = CryptoJS.lib.WordArray.create(fileContent);
+            const hash = CryptoJS.MD5(wordArray).toString();
+            resolve(hash);
+        };
+        reader.onerror = (error) => {
+            reject(error);
+        };
+        reader.readAsArrayBuffer(file);
+    });
+}
+
+async function uploadBlob(file, progressBar, uploadId, url, md5) {
+    const chunkSize = 500_000;
+    const totalChunks = Math.ceil(file.size / chunkSize);
+    for (let i = 0, start = 0; start < file.size; start += chunkSize, i++) {
+        let end = start + chunkSize;
+        const chunk = file.slice(start, end);
+        try {
+            const response = await fetch(url, {
+                method: "POST",
+                headers: {
+                    'Content-Disposition': `attachment; filename="${file.name}"`,
+                    'Upload-ID': uploadId, // ID unique pour chaque upload
+                    'Total-Chunks': totalChunks, // Nombre total de chunks
+                    'File-MD5': md5 // MD5 du fichier complet
+                },
+                body: chunk
+            });
+            if (response.status !== 200) {
+                throw new Error('Erreur lors de l\'upload');
+            }
+            if (progressBar) {
+                progressBar.value = ((i + 1) / totalChunks) * 100;
+            }
+        } catch (error) {
+            if (progressBar) {
+                progressBar.textContent = 'Erreur lors de l\'upload : ' + error.message;
+            }
+            break;
+        }
+    }
+    // Nous avons fini d'envoyer les chunks, on finalise l'upload
+    try {
+        const response = await fetch(url, {
+            method: "POST",
+            headers: {
+                'Content-Disposition': `attachment; filename="${file.name}"`,
+                'Upload-ID': uploadId,
+                'Upload-Complete': 'true',
+                'File-MD5': md5 // MD5 du fichier complet
+            }
+        });
+        if (response.status !== 200) {
+            throw new Error('Erreur lors de la finalisation de l\'upload');
+        }
+        if (progressBar) {
+            progressBar.value = 100;
+        }
+    } catch (error) {
+        if (progressBar) {
+            progressBar.textContent = 'Erreur lors de la finalisation de l\'upload : ' + error.message;
+        }
+    }
+}
+
+function generateUID() {
+    // Création d'un id unique pour chaque upload avec un timestamp et un nombre aléatoire
+    return Date.now() + '-' + Math.random().toString(36).substr(2, 9);
 }

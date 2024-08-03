@@ -37,6 +37,7 @@ if ($uploadComplete) {
     // Renommer le fichier temporaire pour indiquer qu'il est complet
     $finalFilePath = $uploadDir . '/' . $hashedFilename;
     rename($tempFilePath, $finalFilePath);
+    
 } else {
     
 }

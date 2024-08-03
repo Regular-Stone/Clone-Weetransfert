@@ -3,3 +3,5 @@ vendor/
 bdd.db
 .dev_local/
 var/
+node_modules/
+package-lock.json
